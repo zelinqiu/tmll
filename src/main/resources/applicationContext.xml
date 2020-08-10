@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans 
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+   
+   
+   	<context:annotation-config />
+    <!-- 启动对注释的识别(@Service)
+   		即识别service中的Service作为Service -->
+	<context:component-scan base-package = "com.how2java.tmall.service" />
+	
+	<!-- 指定对jdbc:properties的引用 -->
+	<context:property-placeholder location = "classpath:jdbc.properties" />
+	
+	<!-- 配置数据源 -->
+	<bean id = "dataSource" class = "com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+        <property name="url" 							value="${jdbc.url}" />
+        <property name="username" 		   				value="${jdbc.username}" />
+        <property name="password" 						value="${jdbc.password}" />
+        <property name="initialSize" 					value="1" />
+        <property name="minIdle" 						value="1" />
+        <property name="maxActive" 						value="20" />
+        <property name="maxWait" 						value="60000" />
+        <property name="timeBetweenEvictionRunsMillis"  value="60000" />
+        <property name="minEvictableIdleTimeMillis"     value="300000" />
+        <property name="validationQuery" 				value="SELECT 1" />
+        <property name="testWhileIdle" 					value="true" />
+        <property name="testOnBorrow" 								value="false" />
+        <property name="testOnReturn" 								value="false" /> 
+        <property name="poolPreparedStatements" 				    value="true" />
+        <property name="maxPoolPreparedStatementPerConnectionSize"  value="20" />
+    </bean>
+    
+    <!-- 配置Mybatis的SessionFactory，将其命名为SqlSession -->
+    <bean id = "SqlSession" class = "org.mybatis.spring.SqlSessionFactoryBean">
+    	<property name = "typeAliasesPackage" value = "com.how2java.tmall.pojo" />
+    	<property name = "dataSource" ref = "dataSource" />
+    	<property name = "mapperLocations" value = "classpath:mapper/*.xml" />
+    	
+    	<!-- 使用PageHelper插件 -->
+    	<property name="plugins">
+    		<array>
+    			<bean class="com.github.pagehelper.PageInterceptor">
+    				<property name="properties"><value></value></property>
+    			</bean>
+    		</array>
+    	</property>
+    </bean>
+    
+    <!-- Mybatis的Mapper文件识别 -->
+    <bean class = "org.mybatis.spring.mapper.MapperScannerConfigurer">
+    	<property name = "basePackage" value = "com.how2java.tmall.mapper" />
+    </bean>
+    
+    <!-- 开启事务管理 -->
+    <!-- 开启事务管理的原因是当选择购买物品之后，需要同时修改两个数据库中的表格：order_和
+    	 orderItem 如果因为某些原因导致修改不能同时进行，就会出现错误 -->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+    
+</beans>
